@@ -1,0 +1,134 @@
+{
+    "min_packer_version": "1.1.1",
+    "variables": {
+      "subscription_id": null,
+      "tenant_id": "{{env `ARM_TENANT_ID`}}",
+      "azure_location": null,
+      "github_oauth_token": "{{env `GITHUB_OAUTH_TOKEN`}}",
+      "resource_group_name": null
+    },
+    "builders": [
+      {
+        "type": "azure-arm",
+        "subscription_id": "{{user `subscription_id`}}",
+        "tenant_id": "{{user `tenant_id`}}",
+        "client_id": "{{user `client_id`}}",
+        "client_secret": "{{user `client_secret`}}",
+        "managed_image_name": "ad-windows2016-{{isotime \"2006-01-02-150405\"}}",
+        "managed_image_resource_group_name": "{{user `resource_group_name`}}",
+        "os_type": "Windows",
+        "image_publisher": "MicrosoftWindowsServer",
+        "image_offer": "WindowsServer",
+        "image_sku": "2016-Datacenter",
+        "location": "{{user `azure_location`}}",
+        "vm_size": "Standard_A1"
+      },
+      {
+        "type": "hyperv-iso",
+        "boot_wait": "0s",
+        "communicator": "winrm",
+        "cpu": 2,
+        "disk_size": "{{user `disk_size`}}",
+        "enable_secure_boot": true,
+        "floppy_files": [
+          "{{user `autounattend`}}",
+          "./scripts/disable-screensaver.ps1",
+          "./scripts/disable-winrm.ps1",
+          "./scripts/enable-winrm.ps1",
+          "./scripts/microsoft-updates.bat",
+          "./scripts/win-updates.ps1"
+        ],
+        "guest_additions_mode": "disable",
+        "iso_checksum": "{{user `iso_checksum`}}",
+        "iso_checksum_type": "{{user `iso_checksum_type`}}",
+        "iso_url": "{{user `iso_url`}}",
+        "ram_size": 2048,
+        "shutdown_command": "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\"",
+        "switch_name": "{{user `hyperv_switchname`}}",
+        "vm_name": "HyperVServer2016",
+        "winrm_password": "vagrant",
+        "winrm_timeout": "{{user `winrm_timeout`}}",
+        "winrm_username": "vagrant"
+      },
+      {
+        "type": "hyperv-vmcx",
+        "clone_from_vmxc_path": "{{user `vmxc_path`}}",
+        "boot_wait": "0s",
+        "communicator": "winrm",
+        "cpu": 2,
+        "enable_secure_boot": true,
+        "guest_additions_mode": "disable",
+        "ram_size": 2048,
+        "shutdown_command": "shutdown /s /t 10 /f /d p:4:1 /c \"Packer Shutdown\"",
+        "switch_name": "{{user `hyperv_switchname`}}",
+        "vm_name": "HyperVServer2016",
+        "winrm_password": "vagrant",
+        "winrm_timeout": "{{user `winrm_timeout`}}",
+        "winrm_username": "vagrant"
+      }
+    ],
+    "provisioners": [
+      {
+        "scripts": [
+          "./scripts/enable-rdp.bat"
+        ],
+        "type": "windows-shell",
+        "only": ["hyperv-iso"]
+      },
+      {
+        "scripts": [
+          "./scripts/set-winrm-automatic.bat",
+          "./scripts/uac-enable.bat",
+          "./scripts/compile-dotnet-assemblies.bat",
+          "./scripts/dis-updates.bat",
+          "./scripts/compact.bat"
+        ],
+        "type": "windows-shell",
+        "only": ["hyperv-iso"]
+      },
+      {
+        "type": "powershell",
+        "inline": "Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force"
+      },
+      {
+        "type": "powershell",
+        "inline": "Install-Module -Name xActiveDirectory -Force"
+      },
+      {
+        "environment_vars": [
+          "SAFEMODEADMINISTRATORUSER={{user `safemode_administrator_user`}}",
+          "SAFEMODEADMINISTRATORPASSWORD={{user `safemode_administrator_password`}}",
+          "DOMAINADMIN={{user `domain_admin`}}",
+          "DOMAINPASSWORD={{user `domain_password`}}",
+          "DNSDELEGATION={{user `dns_delegation`}}",
+          "DNSDELEGATIONPASSWORD={{user `dns_delegation_password`}}",
+          "NEWADUSER={{user `new_ad_user`}}",
+          "NEWADUSERPASSWORD={{user `new_ad_user_password`}}"
+        ],
+        "scripts":[
+         "../../modules/install-ad/ActiveDirectoryConfig.ps1" 
+        ],
+        "type": "powershell"
+      },
+      {
+        "type": "windows-restart",
+        "restart_timeout": "10m"
+      },
+      {
+        "environment_vars": [
+          "SAFEMODEADMINISTRATORUSER={{user `safemode_administrator_user`}}",
+          "SAFEMODEADMINISTRATORPASSWORD={{user `safemode_administrator_password`}}",
+          "DOMAINADMIN={{user `domain_admin`}}",
+          "DOMAINPASSWORD={{user `domain_password`}}",
+          "DNSDELEGATION={{user `dns_delegation`}}",
+          "DNSDELEGATIONPASSWORD={{user `dns_delegation_password`}}",
+          "NEWADUSER={{user `new_ad_user`}}",
+          "NEWADUSERPASSWORD={{user `new_ad_user_password`}}"
+        ],
+        "scripts":[
+         "../../modules/install-ad/ActiveDirectoryConfig.ps1" 
+        ],
+        "type": "powershell"
+      }
+    ]
+  }

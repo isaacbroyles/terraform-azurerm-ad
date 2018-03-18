@@ -1,0 +1,13 @@
+# Terraform files
+.terraform/
+terraform.tfstate*
+.terraform.tfstate*
+terraform.tfvars
+
+# vscode files
+.vscode/
+
+# packer files
+examples/ad-image/my-variables.json
+examples/ad-image/*.pem
+examples/ad-image/output-*

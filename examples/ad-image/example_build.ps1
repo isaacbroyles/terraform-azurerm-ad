@@ -1,0 +1,1 @@
+packer build -only=hyperv-iso -var-file=".\my-variables.json" .\ad.json
